@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Schema inti — agent wajib ikuti ini
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?   @db.Text
+  name          String?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  loginEvents   LoginEvent[]
+  savedChains   SavedChain[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// OAuth accounts (untuk Google login)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  provider          String  // "google" | "credentials"
+  providerAccountId String
+  access_token      String? @db.Text
+  refresh_token     String? @db.Text
+  expires_at        Int?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LoginEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  provider  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// Metadata kitab (di-seed dari usul-data books.json)
+model Book {
+  id              String    @id  // OpenITI URI, e.g. "0672IbnMalikJayyani.AlfiyyaIbnMalik"
+  slug            String    @unique
+  titleAr         String
+  titleEn         String?
+  transliteration String?
+  authorId        String
+  author          Author    @relation(fields: [authorId], references: [id])
+  genres          BookGenre[]
+  relations       BookRelation[] @relation("sourceBook")
+  relatedFrom     BookRelation[] @relation("targetBook")
+  versions        BookVersion[]
+  contentPages    BookContentPage[]
+  textChunks      TextChunk[]
+  savedIn         SavedChain[]
+  createdAt       DateTime  @default(now())
+}
+
+// Metadata pengarang (di-seed dari usul-data authors.json)
+model Author {
+  id          String  @id  // OpenITI URI, e.g. "0672IbnMalikJayyani"
+  nameAr      String
+  nameEn      String?
+  yearDeath   Int?    // Tahun wafat Hijri
+  books       Book[]
+  teachers    AuthorRelation[] @relation("student")
+  students    AuthorRelation[] @relation("teacher")
+}
+
+// Relasi guru-murid
+model AuthorRelation {
+  teacherId   String
+  studentId   String
+  teacher     Author @relation("teacher", fields: [teacherId], references: [id])
+  student     Author @relation("student", fields: [studentId], references: [id])
+  @@id([teacherId, studentId])
+}
+
+// Genre/bidang keilmuan
+model Genre {
+  id     String  @id  // e.g. "usul-al-fiqh"
+  nameAr String?
+  nameEn String?
+  books  BookGenre[]
+}
+
+model BookGenre {
+  bookId  String
+  genreId String
+  book    Book  @relation(fields: [bookId], references: [id])
+  genre   Genre @relation(fields: [genreId], references: [id])
+  @@id([bookId, genreId])
+}
+
+// Relasi antar kitab (sharh, mukhtasar, dll)
+model BookRelation {
+  id           String       @id @default(cuid())
+  sourceBookId String       // Kitab yang LEBIH MUDA (sharh, mukhtasar)
+  targetBookId String       // Kitab yang LEBIH TUA (matan, sumber)
+  relationType RelationType
+  sourceBook   Book @relation("sourceBook", fields: [sourceBookId], references: [id])
+  targetBook   Book @relation("targetBook", fields: [targetBookId], references: [id])
+  source       String       // "openiti_yml" | "manual" — asal data relasi
+  @@unique([sourceBookId, targetBookId, relationType])
+}
+
+enum RelationType {
+  SHARH       // شرح
+  MUKHTASAR   // مختصر
+  HASHIYA     // حاشية
+  TALKHIS     // تلخيص
+  RELATED     // مرتبط (umum)
+}
+
+// Versi teks kitab
+model BookVersion {
+  id       String @id
+  bookId   String
+  value    String
+  source   String  // "openiti" | "turath"
+  book     Book @relation(fields: [bookId], references: [id])
+  contentPages BookContentPage[]
+}
+
+// Indeks lokal isi kitab dari Usul.ai assets.
+// Ini bukan data buatan: setiap record berasal dari versi teks yang berhasil diambil.
+model BookContentPage {
+  id             String      @id @default(cuid())
+  bookId         String
+  versionId      String
+  volume         String?
+  page           String?
+  text           String      @db.Text
+  normalizedText String      @db.Text
+  source         String
+  value          String
+  book           Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  version        BookVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  createdAt      DateTime    @default(now())
+
+  @@unique([versionId, volume, page])
+  @@index([bookId])
+  @@index([versionId])
+}
+
+// Rantai yang disimpan pengguna
+model SavedChain {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  note      String?
+  query     String?  // Kata kunci pencarian yang menghasilkan rantai ini
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book      Book @relation(fields: [bookId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model TextChunk {
+  id         String  @id
+  bookId     String
+  chunkIndex Int
+  textAr     String
+  babTitle   String?
+  pageRef    String?
+  qdrantId   String  @unique
+  book       Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, chunkIndex])
+  @@index([bookId])
+}
