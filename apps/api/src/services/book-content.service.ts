@@ -1,8 +1,8 @@
 import type { BookVersion } from "@prisma/client"
 
-const DEFAULT_USUL_ASSETS_URL = "https://assets.usul.ai"
 const MAX_PREVIEW_LENGTH = 2_000
 const MAX_CONTENT_SEARCH_RESULTS = 10
+const OPENITI_RAW_BASE = "https://raw.githubusercontent.com/OpenITI"
 
 export interface IUsulPage {
   text?: unknown
@@ -13,6 +13,11 @@ export interface IUsulPage {
 export interface IUsulBookContent {
   pages?: unknown
   sections?: unknown
+}
+
+export interface IOpenITIRawContent {
+  rawText: string
+  pages: IUsulPage[]
 }
 
 export interface IBookContentPreview {
@@ -94,24 +99,127 @@ function extractTextFromContent(content: IUsulBookContent): string | null {
   return null
 }
 
-export async function fetchVersionContent(version: BookVersion): Promise<IUsulBookContent | null> {
-  const baseUrl = process.env.USUL_ASSETS_URL ?? DEFAULT_USUL_ASSETS_URL
-  const url = `${baseUrl.replace(/\/$/, "")}/book-content/${version.source}/${version.value}.json`
+/**
+ * Hitung nama repo OpenITI berdasarkan tahun awal dari version.value.
+ */
+function getOpenITIRepo(versionValue: string): string | null {
+  const match = versionValue.match(/^(\d{4})/)
+  if (!match) return null
+
+  const year = Number.parseInt(match[1], 10)
+  const repo = Math.ceil(year / 25) * 25
+  return `${String(repo).padStart(4, "0")}AH`
+}
+
+function parseOpenITIMarkdown(rawText: string): IUsulPage[] {
+  const lines = rawText.split("\n")
+  const pages: IUsulPage[] = []
+
+  let currentPageText: string[] = []
+  let currentPage = "1"
+  let currentVol = "1"
+  let sawBodyText = false
+
+  const pushPage = (): void => {
+    const text = currentPageText.join(" ").trim()
+    if (!text) return
+
+    pages.push({
+      text,
+      vol: currentVol,
+      page: currentPage,
+    })
+    currentPageText = []
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+
+    if (!trimmed) {
+      if (sawBodyText && currentPageText.length > 0) {
+        currentPageText.push("")
+      }
+      continue
+    }
+
+    if (trimmed.startsWith("#META#") || trimmed.startsWith("######OpenITI#")) {
+      continue
+    }
+
+    const pageMatch = trimmed.match(/^PageV(\d+)P(\d+)/)
+    if (pageMatch) {
+      pushPage()
+      currentVol = String(Number.parseInt(pageMatch[1], 10))
+      currentPage = String(Number.parseInt(pageMatch[2], 10))
+      sawBodyText = true
+      continue
+    }
+
+    if (/^ms\d+/.test(trimmed)) continue
+
+    if (trimmed.startsWith("#") && !trimmed.startsWith("###")) {
+      continue
+    }
+
+    if (trimmed.startsWith("###")) {
+      const babText = trimmed.replace(/^#+\s*/, "").trim()
+      if (babText) {
+        currentPageText.push(babText)
+        sawBodyText = true
+      }
+      continue
+    }
+
+    if (/[\u0600-\u06FF]/.test(trimmed)) {
+      const cleanLine = trimmed.replace(/[%~@|]/g, " ").replace(/\s+/g, " ").trim()
+      if (cleanLine) {
+        currentPageText.push(cleanLine)
+        sawBodyText = true
+      }
+    }
+  }
+
+  pushPage()
+
+  return pages
+}
+
+export async function fetchOpenITIContent(version: BookVersion): Promise<IUsulBookContent | null> {
+  const repo = getOpenITIRepo(version.value)
+  if (!repo) return null
+
+  const parts = version.value.split(".")
+  if (parts.length < 2) return null
+
+  const authorId = parts[0]
+  const bookShort = parts[1]
+  const url = `${OPENITI_RAW_BASE}/${repo}/master/data/${authorId}/${authorId}.${bookShort}/${version.value}`
 
   try {
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(15_000),
+      headers: {
+        "User-Agent": "TurathChain/1.0",
+      },
     })
 
-    if (!response.ok) {
-      return null
-    }
+    if (!response.ok) return null
 
-    return (await response.json()) as IUsulBookContent
+    const rawText = await response.text()
+    if (!rawText || rawText.startsWith("404")) return null
+
+    const pages = parseOpenITIMarkdown(rawText)
+    if (pages.length === 0) return null
+
+    return { pages }
   } catch (error) {
-    console.error(`[BookContentService] Failed to fetch content for ${version.id}:`, error)
+    console.error(`[BookContentService] OpenITI fetch failed for ${version.value}:`, error)
     return null
   }
+}
+
+export async function fetchVersionContent(version: BookVersion): Promise<IUsulBookContent | null> {
+  return fetchOpenITIContent(version)
 }
 
 export function extractPagesFromContent(content: IUsulBookContent): IUsulPage[] {

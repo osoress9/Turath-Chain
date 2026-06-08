@@ -1,0 +1,21 @@
+{
+  "name": "turath-chain",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Turath Chain monorepo root",
+  "scripts": {
+    "db:generate": "pnpm --dir apps/api db:generate",
+    "db:migrate": "pnpm --dir apps/api db:migrate",
+    "db:seed": "pnpm --dir apps/api db:seed",
+    "db:index-content": "pnpm --dir apps/api db:index-content",
+    "db:import-openiti-relations": "pnpm --dir apps/api db:import-openiti-relations",
+    "api:dev": "pnpm --dir apps/api dev",
+    "api:build": "pnpm --dir apps/api build",
+    "api:lint": "pnpm --dir apps/api lint",
+    "api:typecheck": "pnpm --dir apps/api typecheck",
+    "web:dev": "pnpm --dir apps/web dev",
+    "web:build": "pnpm --dir apps/web build",
+    "web:lint": "pnpm --dir apps/web lint",
+    "web:typecheck": "pnpm --dir apps/web typecheck"
+  }
+}

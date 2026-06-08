@@ -1,0 +1,8 @@
+# Python helpers for Turath Chain data-ingestion and embedding utilities.
+# The main app is Node.js, but this file is kept at root for future Python-based scripts.
+
+requests>=2.32.3
+python-dotenv>=1.0.1
+qdrant-client>=1.10.1
+tqdm>=4.66.5
+pydantic>=2.8.2
