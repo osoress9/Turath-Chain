@@ -16,6 +16,12 @@ export type Genre = {
   nameEn: string | null
 }
 
+export type CatalogGenre = {
+  id: string
+  nameAr: string | null
+  nameEn: string | null
+}
+
 export type BookGenre = {
   bookId: string
   genreId: string
@@ -111,4 +117,48 @@ export type ContentSearchResult = {
   value: string
   createdAt: string
   book: Book
+}
+
+export type CatalogBookResult = {
+  id: string
+  slug: string
+  titleAr: string
+  titleEn: string | null
+  transliteration: string | null
+  author: Author
+  genres: CatalogGenre[]
+  authorWorks: {
+    id: string
+    slug: string
+    titleAr: string
+  }[]
+}
+
+export type CatalogAuthorResult = {
+  id: string
+  nameAr: string
+  nameEn: string | null
+  yearDeath: number | null
+  works: {
+    id: string
+    slug: string
+    titleAr: string
+    genres: {
+      id: string
+      nameAr: string | null
+    }[]
+  }[]
+}
+
+export type CatalogSearchResponse = {
+  data: {
+    books: CatalogBookResult[]
+    authors: CatalogAuthorResult[]
+  }
+  meta: {
+    totalBooks: number
+    totalAuthors: number
+    page: number
+    limit: number
+  }
 }

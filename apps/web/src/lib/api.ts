@@ -1,6 +1,7 @@
 import type {
   ApiError,
   Book,
+  CatalogSearchResponse,
   ChainNode,
   ContentSearchResult,
   Genre,
@@ -100,6 +101,11 @@ export async function searchContent(params: {
     data: response.data ?? [],
     meta: response.meta ?? { total: 0, page: 1, limit: params.limit ?? 20, totalPages: 1 },
   }
+}
+
+export async function catalogSearch(q: string, page = 1) {
+  const params = new URLSearchParams({ q, page: String(page), limit: "20" })
+  return apiFetch<CatalogSearchResponse>(`/api/catalog-search?${params.toString()}`)
 }
 
 export async function fetchBook(slug: string) {

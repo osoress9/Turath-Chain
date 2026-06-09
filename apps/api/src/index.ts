@@ -5,6 +5,7 @@ import { logger } from "hono/logger"
 import { bookRoutes } from "./routes/book.route"
 import { authorRoutes } from "./routes/author.route"
 import { authRoutes } from "./routes/auth.route"
+import { catalogSearchRoutes } from "./routes/catalog-search.route"
 import { contentSearchRoutes } from "./routes/content-search.route"
 import { genreRoutes } from "./routes/genre.route"
 import { profileRoutes } from "./routes/profile.route"
@@ -31,6 +32,7 @@ app.get("/api/health", (c) => {
 // Register routes sesuai PRD §API Endpoints
 app.route("/api/books", bookRoutes)
 app.route("/api/authors", authorRoutes)
+app.route("/api/catalog-search", catalogSearchRoutes)
 app.route("/api/content-search", contentSearchRoutes)
 app.route("/api/genres", genreRoutes)
 app.route("/api/saved", savedRoutes)
