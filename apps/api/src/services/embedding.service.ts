@@ -1,4 +1,5 @@
-const DEFAULT_MODEL = process.env.EMBEDDING_MODEL ?? "gemini-embedding-001"
+import { GoogleGenAI } from "@google/genai"
+import { getQdrantCollectionVectorSize } from "../db/qdrant"
 
 function parseEmbedding(values: unknown): number[] | null {
   if (Array.isArray(values) && values.every((value) => typeof value === "number")) {
@@ -6,6 +7,12 @@ function parseEmbedding(values: unknown): number[] | null {
   }
   return null
 }
+
+function getEmbeddingModel(): string {
+  return process.env.EMBEDDING_MODEL ?? "gemini-embedding-001"
+}
+
+const DEFAULT_VERTEX_EMBEDDING_DIMENSION = 1024
 
 async function embedWithLocal(text: string): Promise<number[]> {
   const url = process.env.LOCAL_EMBEDDING_URL
@@ -40,14 +47,14 @@ async function embedWithLocal(text: string): Promise<number[]> {
   return embedding
 }
 
-async function embedWithGemini(text: string): Promise<number[]> {
+async function embedWithGeminiKey(text: string): Promise<number[]> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY belum diatur")
   }
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(DEFAULT_MODEL)}:embedContent?key=${encodeURIComponent(apiKey)}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(getEmbeddingModel())}:embedContent?key=${encodeURIComponent(apiKey)}`,
     {
       method: "POST",
       headers: {
@@ -80,6 +87,37 @@ async function embedWithGemini(text: string): Promise<number[]> {
   return embedding
 }
 
+async function embedWithVertex(text: string): Promise<number[]> {
+  const project = process.env.GOOGLE_CLOUD_PROJECT
+  if (!project) {
+    throw new Error("GOOGLE_CLOUD_PROJECT belum diatur")
+  }
+
+  const outputDimensionality =
+    (await getQdrantCollectionVectorSize()) ?? DEFAULT_VERTEX_EMBEDDING_DIMENSION
+
+  const ai = new GoogleGenAI({
+    vertexai: true,
+    project,
+    location: process.env.GOOGLE_CLOUD_LOCATION ?? "us-central1",
+  })
+
+  const result = await ai.models.embedContent({
+    model: getEmbeddingModel(),
+    contents: text,
+    config: {
+      outputDimensionality,
+    },
+  })
+
+  const values = result.embeddings?.[0]?.values
+  if (!values) {
+    throw new Error("Response Vertex AI tidak valid")
+  }
+
+  return values
+}
+
 export async function embedQuery(text: string): Promise<number[]> {
   const provider = (process.env.EMBEDDING_PROVIDER ?? "gemini").toLowerCase()
 
@@ -87,8 +125,12 @@ export async function embedQuery(text: string): Promise<number[]> {
     return embedWithLocal(text)
   }
 
-  if (provider === "gemini" || provider === "vertex") {
-    return embedWithGemini(text)
+  if (provider === "gemini") {
+    return embedWithGeminiKey(text)
+  }
+
+  if (provider === "vertex") {
+    return embedWithVertex(text)
   }
 
   throw new Error(`EMBEDDING_PROVIDER tidak didukung: ${provider}`)

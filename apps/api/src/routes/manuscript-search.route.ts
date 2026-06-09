@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client"
 import { Hono } from "hono"
 import { prisma } from "../db/prisma"
-import { QDRANT_COLLECTION, qdrant } from "../db/qdrant"
+import { getQdrantClient, getQdrantCollection } from "../db/qdrant"
 import { embedQuery } from "../services/embedding.service"
 import { makeLexicalSnippet, normalizeForSearch } from "../services/book-content.service"
 
@@ -193,7 +193,7 @@ manuscriptSearchRoutes.get("/semantic", async (c) => {
           }
         : undefined
 
-    const searchResult = await qdrant.search(QDRANT_COLLECTION, {
+    const searchResult = await getQdrantClient().search(getQdrantCollection(), {
       vector,
       limit: topK,
       filter,
@@ -266,7 +266,7 @@ manuscriptSearchRoutes.get("/semantic/status", async (c) => {
     let totalVectors = 0
 
     do {
-      const response = await qdrant.scroll(QDRANT_COLLECTION, {
+      const response = await getQdrantClient().scroll(getQdrantCollection(), {
         limit: 256,
         offset,
         with_payload: true,

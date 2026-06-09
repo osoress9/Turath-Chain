@@ -1,4 +1,7 @@
+import { existsSync, readFileSync } from "node:fs"
+import { resolve } from "node:path"
 import { serve } from "@hono/node-server"
+import { parse } from "dotenv"
 import { Hono } from "hono"
 import { cors } from "hono/cors"
 import { logger } from "hono/logger"
@@ -12,6 +15,30 @@ import { manuscriptSearchRoutes } from "./routes/manuscript-search.route"
 import { genreRoutes } from "./routes/genre.route"
 import { profileRoutes } from "./routes/profile.route"
 import { savedRoutes } from "./routes/saved.route"
+
+const initialEnvKeys = new Set(Object.keys(process.env))
+
+function loadEnvFile(fileName: string, overwriteLoadedValues = false): void {
+  const filePath = resolve(process.cwd(), fileName)
+
+  if (!existsSync(filePath)) {
+    return
+  }
+
+  const parsed = parse(readFileSync(filePath))
+  for (const [key, value] of Object.entries(parsed)) {
+    if (initialEnvKeys.has(key)) {
+      continue
+    }
+
+    if (overwriteLoadedValues || process.env[key] === undefined) {
+      process.env[key] = value
+    }
+  }
+}
+
+loadEnvFile(".env")
+loadEnvFile(".env.local", true)
 
 const app = new Hono()
 
