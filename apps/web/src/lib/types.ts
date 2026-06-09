@@ -162,3 +162,97 @@ export type CatalogSearchResponse = {
     limit: number
   }
 }
+
+export type HistoricalBookSummary = {
+  id: string
+  slug: string
+  titleAr: string
+  titleEn: string | null
+  transliteration: string | null
+  genres: Genre[]
+}
+
+export type HistoricalAuthorSummary = {
+  id: string
+  nameAr: string
+  nameEn: string | null
+  yearDeath: number | null
+  works: HistoricalBookSummary[]
+}
+
+export type HistoricalYearItem = {
+  book: HistoricalBookSummary
+  author: Author
+  filterReason: string
+}
+
+export type HistoricalYearSearchResponse = {
+  data: HistoricalYearItem[]
+  meta: SearchMeta
+}
+
+export type HistoricalLineageResponse = {
+  data: {
+    author: HistoricalAuthorSummary
+    teachers: HistoricalAuthorSummary[]
+    students: HistoricalAuthorSummary[]
+    dataNote: string
+  }
+}
+
+export type ManuscriptGenre = {
+  id: string
+  nameAr: string | null
+  nameEn: string | null
+}
+
+export type ManuscriptBook = {
+  id: string
+  slug: string
+  titleAr: string
+  titleEn: string | null
+  author: Author
+  genres: ManuscriptGenre[]
+}
+
+export type ManuscriptSemanticResult = {
+  score: number
+  textAr: string
+  babTitle: string | null
+  pageRef: string | null
+  book: ManuscriptBook
+}
+
+export type ManuscriptSemanticSearchResponse = {
+  data: ManuscriptSemanticResult[]
+  meta: {
+    topK: number
+    total: number
+  }
+}
+
+export type ManuscriptSemanticStatusResponse = {
+  data: {
+    indexedBooks: number
+    totalVectors: number
+  }
+}
+
+export type ManuscriptLexicalSnippet = {
+  before: string
+  match: string
+  after: string
+}
+
+export type ManuscriptLexicalResult = {
+  bookId: string
+  book: ManuscriptBook
+  page: string | null
+  volume: string | null
+  snippet: ManuscriptLexicalSnippet
+}
+
+export type ManuscriptLexicalSearchResponse = {
+  data: ManuscriptLexicalResult[]
+  meta: SearchMeta
+}

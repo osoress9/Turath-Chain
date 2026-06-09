@@ -88,6 +88,7 @@ model Author {
 model AuthorRelation {
   teacherId   String
   studentId   String
+  sourceNote  String?
   teacher     Author @relation("teacher", fields: [teacherId], references: [id])
   student     Author @relation("student", fields: [studentId], references: [id])
   @@id([teacherId, studentId])

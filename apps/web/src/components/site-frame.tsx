@@ -14,6 +14,8 @@ type SiteFrameProps = {
 const navItems = [
   { href: "/", label: "Beranda", icon: BookOpenText },
   { href: "/katalog", label: "Katalog", icon: LibraryBig },
+  { href: "/sejarah", label: "Sejarah & Silsilah", icon: LibraryBig },
+  { href: "/naskah", label: "Naskah", icon: Search },
   { href: "/cari", label: "Cari", icon: Search },
   { href: "/tersimpan", label: "Tersimpan", icon: Bookmark },
   { href: "/profil", label: "Profil", icon: UserRound },

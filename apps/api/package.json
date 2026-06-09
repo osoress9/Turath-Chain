@@ -13,12 +13,14 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:index-content": "tsx prisma/index-content.ts",
+    "index:content": "tsx prisma/index-content.ts",
     "db:import-openiti-relations": "tsx prisma/import-openiti-relations.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
     "@hono/zod-validator": "^0.8.0",
     "@prisma/client": "^6.2.0",
+    "@qdrant/qdrant-js": "^1.18.0",
     "bcryptjs": "^3.0.3",
     "hono": "^4.6.14",
     "jose": "^5.9.6",

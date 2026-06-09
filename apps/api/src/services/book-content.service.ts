@@ -67,6 +67,29 @@ export function makeSnippet(text: string, query: string): string {
   return cleanText.slice(start, end).trim()
 }
 
+export function makeLexicalSnippet(
+  text: string,
+  normalizedQuery: string
+): { before: string; match: string; after: string } {
+  const cleanText = stripHtml(text)
+  const normalizedText = normalizeForSearch(cleanText)
+  const index = normalizedText.indexOf(normalizedQuery)
+
+  if (index === -1) {
+    return {
+      before: "",
+      match: "",
+      after: cleanText.slice(0, 200),
+    }
+  }
+
+  const before = cleanText.slice(Math.max(0, index - 100), index)
+  const match = cleanText.slice(index, index + normalizedQuery.length)
+  const after = cleanText.slice(index + normalizedQuery.length, index + normalizedQuery.length + 150)
+
+  return { before, match, after }
+}
+
 function extractTextFromContent(content: IUsulBookContent): string | null {
   if (Array.isArray(content.pages)) {
     const pageText = content.pages

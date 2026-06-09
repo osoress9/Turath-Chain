@@ -7,6 +7,8 @@ import { authorRoutes } from "./routes/author.route"
 import { authRoutes } from "./routes/auth.route"
 import { catalogSearchRoutes } from "./routes/catalog-search.route"
 import { contentSearchRoutes } from "./routes/content-search.route"
+import { historicalSearchRoutes } from "./routes/historical-search.route"
+import { manuscriptSearchRoutes } from "./routes/manuscript-search.route"
 import { genreRoutes } from "./routes/genre.route"
 import { profileRoutes } from "./routes/profile.route"
 import { savedRoutes } from "./routes/saved.route"
@@ -33,6 +35,8 @@ app.get("/api/health", (c) => {
 app.route("/api/books", bookRoutes)
 app.route("/api/authors", authorRoutes)
 app.route("/api/catalog-search", catalogSearchRoutes)
+app.route("/api/historical-search", historicalSearchRoutes)
+app.route("/api/manuscript-search", manuscriptSearchRoutes)
 app.route("/api/content-search", contentSearchRoutes)
 app.route("/api/genres", genreRoutes)
 app.route("/api/saved", savedRoutes)

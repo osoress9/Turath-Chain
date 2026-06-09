@@ -4,9 +4,14 @@ import type {
   CatalogSearchResponse,
   ChainNode,
   ContentSearchResult,
+  HistoricalLineageResponse,
+  HistoricalYearSearchResponse,
   Genre,
   ProfileSummary,
   SavedChain,
+  ManuscriptSemanticSearchResponse,
+  ManuscriptSemanticStatusResponse,
+  ManuscriptLexicalSearchResponse,
   SearchMeta,
 } from "@/lib/types"
 
@@ -106,6 +111,62 @@ export async function searchContent(params: {
 export async function catalogSearch(q: string, page = 1) {
   const params = new URLSearchParams({ q, page: String(page), limit: "20" })
   return apiFetch<CatalogSearchResponse>(`/api/catalog-search?${params.toString()}`)
+}
+
+export async function historicalYearSearch(params: {
+  from: number
+  to: number
+  genre?: string
+  q?: string
+  page?: number
+  limit?: number
+}) {
+  const query = new URLSearchParams({
+    from: String(params.from),
+    to: String(params.to),
+    page: String(params.page ?? 1),
+    limit: String(params.limit ?? 20),
+  })
+  if (params.genre) query.set("genre", params.genre)
+  if (params.q) query.set("q", params.q)
+  return apiFetch<HistoricalYearSearchResponse>(`/api/historical-search/year?${query.toString()}`)
+}
+
+export async function historicalLineageSearch(q: string, depth = 1) {
+  const query = new URLSearchParams({
+    q,
+    depth: String(depth),
+  })
+  return apiFetch<HistoricalLineageResponse>(`/api/historical-search/lineage?${query.toString()}`)
+}
+
+export async function fetchManuscriptSemanticStatus() {
+  const response = await apiFetch<ManuscriptSemanticStatusResponse>("/api/manuscript-search/semantic/status")
+  return response.data
+}
+
+export async function searchManuscriptSemantic(params: { q: string; topK?: number; genre?: string }) {
+  const query = new URLSearchParams({
+    q: params.q,
+    topK: String(params.topK ?? 10),
+  })
+  if (params.genre) query.set("genre", params.genre)
+  return apiFetch<ManuscriptSemanticSearchResponse>(`/api/manuscript-search/semantic?${query.toString()}`)
+}
+
+export async function searchManuscriptLexical(params: {
+  q: string
+  genre?: string
+  page?: number
+  limit?: number
+}) {
+  const query = new URLSearchParams({
+    q: params.q,
+    page: String(params.page ?? 1),
+    limit: String(params.limit ?? 20),
+  })
+  if (params.genre) query.set("genre", params.genre)
+  return apiFetch<ManuscriptLexicalSearchResponse>(`/api/manuscript-search/lexical?${query.toString()}`)
 }
 
 export async function fetchBook(slug: string) {
